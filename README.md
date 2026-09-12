@@ -28,7 +28,8 @@ writes to onto the single Railway volume.
 4. Installs once, through OpenCart's own `install/cli_install.php`, and seeds the
    store name and SMTP transport, which OpenCart keeps in the database rather than
    in configuration. Guarded by a marker on the volume, so nothing an operator
-   later changes in the admin is reverted. The installer directory is deleted
+   later changes in the admin is reverted; the mail transport alone is re-seeded
+   when the SMTP variables themselves change. The installer directory is deleted
    afterwards.
 5. Renders `config.php` and `admin/config.php` from the environment, on every
    boot, so a changed domain or a rotated database password takes effect on the
@@ -68,6 +69,8 @@ Everything has a working default except the first administrator's password.
 | `OPENCART_PUBLIC_URL` | from `RAILWAY_PUBLIC_DOMAIN` | override for a custom domain |
 | `OPENCART_SMTP_HOST` | unset | mail relay; when set, the store is switched to SMTP |
 | `OPENCART_SMTP_PORT` | `1025` | mail relay port |
+| `OPENCART_SMTP_USERNAME` | unset | SMTP user; OpenCart always sends `AUTH LOGIN`, so this is required |
+| `OPENCART_SMTP_PASSWORD` | unset | SMTP password |
 | `OPENCART_CRON_INTERVAL` | `3600` | seconds between cron cycles |
 | `OPENCART_DATA_DIR` | `/data` | volume mount path |
 | `APACHE_MAX_REQUEST_WORKERS` | from the cgroup | override Apache's worker count |

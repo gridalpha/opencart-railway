@@ -212,13 +212,28 @@ if [ ! -f "$MARKER" ]; then
 			;;
 	esac
 
-	php /opt/opencart/bin/seed-settings.php
+	php /opt/opencart/bin/seed-settings.php install
 
 	touch "$MARKER"
 	chown www-data:www-data "$MARKER"
 	log "installation complete"
 else
 	log "already installed; skipping the installer"
+fi
+
+# Mail transport lives in the database, so a changed SMTP variable would
+# otherwise never reach the store. Re-seed only when the inputs actually change,
+# which leaves an operator's own Settings > Mail edit alone.
+MAIL_MARKER="${DATA_DIR}/.opencart-mail-seed"
+MAIL_FINGERPRINT=$(printf '%s|%s|%s|%s|%s' \
+	"${OPENCART_SMTP_HOST:-}" "${OPENCART_SMTP_HOST_DEFAULT:-}" \
+	"${OPENCART_SMTP_PORT:-}" "${OPENCART_SMTP_USERNAME:-}" \
+	"${OPENCART_SMTP_PASSWORD:-}" | sha256sum | cut -d" " -f1)
+
+if [ "$(cat "$MAIL_MARKER" 2>/dev/null || true)" != "$MAIL_FINGERPRINT" ]; then
+	php /opt/opencart/bin/seed-settings.php mail
+	printf '%s\n' "$MAIL_FINGERPRINT" > "$MAIL_MARKER"
+	chown www-data:www-data "$MAIL_MARKER"
 fi
 
 # The installer is single-use and destructive — it drops every OpenCart table

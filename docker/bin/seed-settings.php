@@ -1,12 +1,14 @@
 <?php
-// Runs once, immediately after the first install. OpenCart keeps its store name
-// and mail transport in the database rather than in configuration, so a fresh
-// install would otherwise come up called "Your Store" and try to post mail
-// through PHP's mail() — which no container has an MTA for, so every order
-// confirmation and password reset would be silently dropped.
+// OpenCart keeps its store name and mail transport in the database rather than in
+// configuration, so a fresh install would otherwise come up called "Your Store"
+// and try to post mail through PHP's mail() — which no container has an MTA for,
+// so every order confirmation and password reset would be silently dropped.
 //
-// Guarded by the install marker in the entrypoint, so an operator's later change
-// in the admin is never reverted.
+// Two modes, because the two concerns want different guards:
+//   install  everything, once, behind the install marker
+//   mail     the mail transport only, re-run by the entrypoint when the SMTP
+//            variables change — so an operator who edits Settings > Mail in the
+//            admin keeps their change until they change the variables instead.
 
 declare(strict_types=1);
 
@@ -29,6 +31,12 @@ if (!is_array($db)) {
 }
 
 $prefix = oc_env('OPENCART_DB_PREFIX', 'oc_');
+$mode = $argv[1] ?? 'install';
+
+if (!in_array($mode, ['install', 'mail'], true)) {
+    oc_log('unknown mode: ' . $mode);
+    exit(1);
+}
 
 mysqli_report(MYSQLI_REPORT_OFF);
 
@@ -44,7 +52,7 @@ mysqli_set_charset($link, 'utf8mb4');
 // key => [value, serialized]
 $settings = [];
 
-$store_name = oc_env('OPENCART_STORE_NAME');
+$store_name = $mode === 'install' ? oc_env('OPENCART_STORE_NAME') : '';
 
 if ($store_name !== '') {
     $settings['config_name'] = [$store_name, 0];
@@ -113,4 +121,4 @@ foreach ($settings as $key => $pair) {
 
 mysqli_close($link);
 
-oc_log('seeded ' . count($settings) . ' settings');
+oc_log('seeded ' . count($settings) . ' settings (' . $mode . ')');
