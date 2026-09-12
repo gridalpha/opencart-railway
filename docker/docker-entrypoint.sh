@@ -86,6 +86,12 @@ cp -a "${SEED_DIR}/storage/vendor" "${DATA_DIR}/storage/vendor"
 cp -an "${SEED_DIR}/image/." "${DATA_DIR}/image/" 2>/dev/null || true
 mkdir -p "${DATA_DIR}/image/cache" "${DATA_DIR}/image/catalog"
 
+# Railway restores files a build layer deleted, so system/storage/ and image/ are
+# back inside the document root at runtime even though the Dockerfile removed
+# them. The stale storage tree also makes OpenCart's admin raise its "delete the
+# previous storage directory" security warning on every dashboard load.
+rm -rf "${WEB_ROOT}/system/storage"
+
 # Railway volumes are 1:1, and OpenCart needs two writable trees. image/ has to
 # stay under the document root because the browser fetches thumbnails from it,
 # so it is a symlink; storage/ is addressed directly through DIR_STORAGE.
